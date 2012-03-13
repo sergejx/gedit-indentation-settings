@@ -1,0 +1,9 @@
+[Plugin]
+Loader=python
+Module=indentation_settings
+IAge=3
+Name=Indentation Settings
+Description=Separate indentation settings for different file types.
+Authors=Sergej Chodarev
+Copyright=Copyright © 2012 Sergej Chodarev
+Website=http://github.com/sergejx/gedit-indentation-settings/

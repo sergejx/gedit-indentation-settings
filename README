@@ -1,0 +1,8 @@
+Indentation Settings for Gedit
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Separate indentation settings for different file types.
+
+Installation:
+Copy files indentation_settings.plugin and indentation_settings.py to
+~/.local/share/gedit/plugins directory and enable plugin in Gedit preferences.
