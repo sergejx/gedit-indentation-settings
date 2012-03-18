@@ -28,12 +28,14 @@ TABS = 0
 SPACES = 1
 
 class Settings(object):
+    """Custom indentation settings storage."""
     def __init__(self):
         self.filename = os.path.join(glib.get_user_config_dir(),
-                                     "gedit", "custom-indent.conf")
+                                     "gedit", "indentation-settings")
         self.settings = {}
 
     def read(self):
+        """Read configuration file."""
         try:
             f = file(self.filename, "r")
         except IOError: # No settings
