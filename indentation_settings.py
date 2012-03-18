@@ -103,6 +103,7 @@ class IndentationSettingsApp(GObject.Object, Gedit.AppActivatable):
         pass
 
 class IndentationSettingsView(GObject.Object, Gedit.ViewActivatable):
+    """Indenation settings applicator for a view."""
     __gtype_name__ = "IndentationSettingsView"
 
     view = GObject.property(type=Gedit.View)
@@ -110,12 +111,11 @@ class IndentationSettingsView(GObject.Object, Gedit.ViewActivatable):
     def __init__(self):
         GObject.Object.__init__(self)
 
-    def apply_settings(self):
+    def apply_settings(self, *args):
         global settings
-        buf = self.view.get_buffer()
-        if not buf:
+        lang = self.document.get_language()
+        if not lang: # No language set
             return
-        lang = buf.get_language()
         lang_id = lang.get_id()
         if settings.is_configured(lang_id):
             if settings.indent_type(lang_id) == TABS:
@@ -125,10 +125,15 @@ class IndentationSettingsView(GObject.Object, Gedit.ViewActivatable):
                 self.view.set_tab_width(settings.indent_len(lang_id))
 
     def do_activate(self):
-            self.apply_settings()
+        self.document = self.view.get_buffer()
+        self.apply_settings()
+        self.handlers = [
+                self.document.connect("loaded", self.apply_settings),
+                self.document.connect("saved", self.apply_settings)]
 
     def do_deactivate(self):
-        pass
+        for handler in self.handlers:
+            self.document.disconnect(handler)
 
     def do_update_state(self):
         pass
