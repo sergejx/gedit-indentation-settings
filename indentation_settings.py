@@ -139,8 +139,7 @@ class IndentationSettingsView(GObject.Object, Gedit.ViewActivatable):
         self.document = self.view.get_buffer()
         self.apply_settings()
         self.handlers = [
-                self.document.connect("loaded", self.apply_settings),
-                self.document.connect("saved", self.apply_settings)]
+                self.document.connect("notify::language", self.apply_settings)]
 
     def do_deactivate(self):
         for handler in self.handlers:
