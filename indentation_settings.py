@@ -22,7 +22,9 @@
 
 import os
 import glib
-from gi.repository import GObject, Gedit
+from gi.repository import GObject, Gedit, Gio
+
+SETTINGS_KEY = "org.gnome.gedit.preferences.editor"
 
 TABS = 0
 SPACES = 1
@@ -33,6 +35,7 @@ class Settings(object):
         self.filename = os.path.join(glib.get_user_config_dir(),
                                      "gedit", "indentation-settings")
         self.settings = {}
+        self.gedit_settings = Gio.Settings(SETTINGS_KEY)
 
     def read(self):
         """Read configuration file."""
@@ -71,7 +74,7 @@ class Settings(object):
         if lang in self.settings and self.settings[lang] > 0:
             return self.settings[lang]
         else:
-            return None
+            return self.gedit_settings.get_uint("tabs-size")
 
     def indent_type(self, lang):
         if lang in self.settings:
@@ -80,7 +83,10 @@ class Settings(object):
             else:
                 return SPACES
         else:
-            return None
+            if self.gedit_settings.get_boolean("insert-spaces"):
+                return SPACES
+            else:
+                return TABS
 
 
 # Global settings
@@ -119,12 +125,11 @@ class IndentationSettingsView(GObject.Object, Gedit.ViewActivatable):
         if not lang: # No language set
             return
         lang_id = lang.get_id()
-        if settings.is_configured(lang_id):
-            if settings.indent_type(lang_id) == TABS:
-                self.view.set_insert_spaces_instead_of_tabs(False)
-            else:
-                self.view.set_insert_spaces_instead_of_tabs(True)
-                self.view.set_tab_width(settings.indent_len(lang_id))
+        if settings.indent_type(lang_id) == TABS:
+            self.view.set_insert_spaces_instead_of_tabs(False)
+        else:
+            self.view.set_insert_spaces_instead_of_tabs(True)
+            self.view.set_tab_width(settings.indent_len(lang_id))
 
     def modeline_used(self):
         """Was indentation set by modeline?"""
