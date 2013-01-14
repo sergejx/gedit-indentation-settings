@@ -22,7 +22,7 @@
 
 import os
 import glib
-from gi.repository import GObject, Gedit, Gio
+from gi.repository import GObject, Gio, Gtk, Gedit, GtkSource, PeasGtk
 
 SETTINGS_KEY = "org.gnome.gedit.preferences.editor"
 
@@ -88,12 +88,20 @@ class Settings(object):
             else:
                 return TABS
 
+    def list_settings(self):
+        """
+        Return list of all settings as a tuples (language_code, indentation)
+        where indentation is either number of spaces or 0 for tabs.
+        """
+        return self.settings.items()
+
 
 # Global settings
 settings = Settings()
 
 
-class IndentationSettingsApp(GObject.Object, Gedit.AppActivatable):
+class IndentationSettingsApp(GObject.Object, Gedit.AppActivatable,
+                             PeasGtk.Configurable):
     __gtype_name__ = "IndentationSettingsApp"
 
     app = GObject.property(type=Gedit.App)
@@ -107,6 +115,12 @@ class IndentationSettingsApp(GObject.Object, Gedit.AppActivatable):
 
     def do_deactivate(self):
         pass
+
+    def do_create_configure_widget(self):
+        datadir = self.plugin_info.get_data_dir()
+        dialog = IndentationSettingsDialog(datadir)
+        return dialog.get_panel()
+
 
 class IndentationSettingsView(GObject.Object, Gedit.ViewActivatable):
     """Indenation settings applicator for a view."""
@@ -151,4 +165,77 @@ class IndentationSettingsView(GObject.Object, Gedit.ViewActivatable):
             self.document.disconnect(handler)
 
     def do_update_state(self):
+        pass
+
+class IndentationSettingsDialog(object):
+    def __init__(self, datadir):
+        # Read UI definition
+        builder = Gtk.Builder()
+        builder.add_from_file(os.path.join(datadir, "settings.ui"))
+
+        # Get references to UI widgets
+        self.panel = builder.get_object("settings_panel")
+        self.settings_list = builder.get_object("settings_list")
+        self.add_button = builder.get_object("add_button")
+        self.remove_button = builder.get_object("remove_button")
+        self.language_combo = builder.get_object("language_combo")
+        self.tabs_radio = builder.get_object("tabs_radio")
+        self.spaces_radio = builder.get_object("spaces_radio")
+        self.num_spaces_spin = builder.get_object("num_spaces_spin")
+        self.languages_store = builder.get_object("languages_store")
+        self.settings_store = builder.get_object("settings_store")
+        
+        builder.get_object("toolbar").get_style_context() \
+                .add_class("inline-toolbar")
+
+        self.init_settings_list()
+        self.init_languages_list()
+
+        builder.connect_signals(self)
+
+    def get_panel(self):
+        return self.panel
+
+    def init_languages_list(self):
+        manager = GtkSource.LanguageManager.get_default()
+        lang_ids = manager.get_language_ids()
+        for id in lang_ids:
+            name = manager.get_language(id).get_name()
+            self.languages_store.append([id, name])
+
+    def init_settings_list(self):
+        manager = GtkSource.LanguageManager.get_default()
+        for (lang_id, level) in settings.list_settings():
+            name = manager.get_language(lang_id).get_name()
+            self.settings_store.append([lang_id, level, name])
+    
+    def settings_selection_changed(self, tree_selection):
+        # Find out selected language
+        model, itr = tree_selection.get_selected()
+        lang_id = model.get_value(itr, 0)
+        # Set all controls properly
+        self.language_combo.set_active_id(lang_id)
+        indent_type = settings.indent_type(lang_id)
+        if indent_type == TABS:
+            self.tabs_radio.set_active(True)
+        elif indent_type == SPACES:
+            self.spaces_radio.set_active(True)
+            self.num_spaces_spin.set_value(settings.indent_len(lang_id))
+
+    def language_changed(self, combobox):
+        pass
+
+    def tabs_toggled(self, button):
+        self.num_spaces_spin.set_sensitive(self.spaces_radio.get_active())
+
+    def spaces_toggled(self, button):
+        self.num_spaces_spin.set_sensitive(self.spaces_radio.get_active())
+
+    def num_spaces_changed(self, button):
+        pass
+
+    def add_setting(self, button):
+        pass
+
+    def remove_setting(self, button):
         pass
