@@ -262,6 +262,7 @@
                         <property name="visible">True</property>
                         <property name="can_focus">True</property>
                         <property name="adjustment">adjustment1</property>
+                        <signal name="value-changed" handler="num_spaces_changed" swapped="no"/>
                       </object>
                       <packing>
                         <property name="expand">False</property>
