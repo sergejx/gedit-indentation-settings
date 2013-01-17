@@ -19,7 +19,7 @@
       <!-- column-name id -->
       <column type="gchararray"/>
       <!-- column-name indentation -->
-      <column type="gint"/>
+      <column type="gchararray"/>
       <!-- column-name name -->
       <column type="gchararray"/>
     </columns>

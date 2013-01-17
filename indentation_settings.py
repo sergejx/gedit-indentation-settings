@@ -26,8 +26,43 @@ from gi.repository import GObject, Gio, Gtk, Gedit, GtkSource, PeasGtk
 
 SETTINGS_KEY = "org.gnome.gedit.preferences.editor"
 
-TABS = 0
-SPACES = 1
+class IndentationMode(object):
+    """Indentation settings: use tabs or some number of spaces."""
+
+    def __init__(self, tabs=None, spaces=None):
+        assert tabs is None or spaces is None
+        assert tabs is True or spaces > 0
+        if tabs:
+            self.indentation = 0
+        else:
+            self.indentation = spaces
+
+    def use_tabs(self):
+        """Use tabs for indentation?"""
+        return self.indentation == 0
+
+    def number_spaces(self):
+        """How many spaces to use for intentation?"""
+        assert self.indentation > 0
+        return self.indentation
+
+    def __str__(self):
+        if self.indentation == 0:
+            return "tabs"
+        else:
+            return str(self.indentation)
+
+    @classmethod
+    def from_string(cls, string):
+        """
+        Create an IndentationMode object based on string specification.
+        Specification is either number of spaces or word "tabs".
+        The function would raise ValueError for incorrect inputs.
+        """
+        if string == "tabs":
+            return cls(tabs=True)
+        else:
+            return cls(spaces=int(string))
 
 class Settings(object):
     """Custom indentation settings storage."""
@@ -67,45 +102,32 @@ class Settings(object):
             raise ValueError("Malformed configuration line")
         lang = parts[0].strip()
         indent_s = parts[1].strip()
-        if (indent_s == "tabs"):
-            indent = 0
-        else:
-            indent = int(indent_s)
+        indent = IndentationMode.from_string(indent_s)
         return (lang, indent)
 
     def is_configured(self, lang):
         return lang in self.settings
 
-    def indent_len(self, lang):
-        if lang in self.settings and self.settings[lang] > 0:
+    def default_mode(self):
+        if self.gedit_settings.get_boolean("insert-spaces"):
+            return IndentationMode(spaces=self.gedit_settings.get_uint("tabs-size"))
+        else:
+            return IndentationMode(tabs=True)
+                
+    def get_mode(self, lang):
+        if lang in self.settings:
             return self.settings[lang]
         else:
-            return self.gedit_settings.get_uint("tabs-size")
+            return self.default_mode()
 
-    def indent_type(self, lang):
-        if lang in self.settings:
-            if self.settings[lang] <= 0:
-                return TABS
-            else:
-                return SPACES
-        else:
-            if self.gedit_settings.get_boolean("insert-spaces"):
-                return SPACES
-            else:
-                return TABS
-
-    def set_tabs(self, lang):
-        self.settings[lang] = 0
-        self.write()
-
-    def set_spaces(self, lang, num):
-        self.settings[lang] = num
+    def set_mode(self, lang, mode):
+        self.settings[lang] = mode
         self.write()
 
     def list_settings(self):
         """
-        Return list of all settings as a tuples (language_code, indentation)
-        where indentation is either number of spaces or 0 for tabs.
+        Return list of all settings as a tuples (language_code, mode)
+        where mode is instance of IndentationMode.
         """
         return self.settings.items()
 
@@ -152,11 +174,12 @@ class IndentationSettingsView(GObject.Object, Gedit.ViewActivatable):
         if not lang: # No language set
             return
         lang_id = lang.get_id()
-        if settings.indent_type(lang_id) == TABS:
+        mode = settings.get_mode(lang_id)
+        if mode.use_tabs():
             self.view.set_insert_spaces_instead_of_tabs(False)
         else:
             self.view.set_insert_spaces_instead_of_tabs(True)
-            self.view.set_tab_width(settings.indent_len(lang_id))
+            self.view.set_tab_width(mode.number_spaces())
 
     def modeline_used(self):
         """Was indentation set by modeline?"""
@@ -225,7 +248,7 @@ class IndentationSettingsDialog(object):
         manager = GtkSource.LanguageManager.get_default()
         for (lang_id, level) in settings.list_settings():
             name = manager.get_language(lang_id).get_name()
-            self.settings_store.append([lang_id, level, name])
+            self.settings_store.append([lang_id, str(level), name])
 
     def save_language_settings(self):
         """Save selected indentation settings."""
@@ -233,10 +256,10 @@ class IndentationSettingsDialog(object):
             return
         lang_id = self.language_combo.get_active_id()
         if self.tabs_radio.get_active(): # Tabs
-            settings.set_tabs(lang_id)
+            settings.set_mode(lang_id, IndentationMode(tabs=True))
         else: # Spaces
             num = self.num_spaces_spin.get_value_as_int()
-            settings.set_spaces(lang_id, num)
+            settings.set_mode(lang_id, IndentationMode(spaces=num))
     
     def settings_selection_changed(self, tree_selection):
         # Find out selected language
@@ -245,12 +268,12 @@ class IndentationSettingsDialog(object):
         # Set all controls properly
         self.active = False # Stop saving settings
         self.language_combo.set_active_id(lang_id)
-        indent_type = settings.indent_type(lang_id)
-        if indent_type == TABS:
+        mode = settings.get_mode(lang_id)
+        if mode.use_tabs():
             self.tabs_radio.set_active(True)
-        elif indent_type == SPACES:
+        else:
             self.spaces_radio.set_active(True)
-            self.num_spaces_spin.set_value(settings.indent_len(lang_id))
+            self.num_spaces_spin.set_value(mode.number_spaces())
         self.active = True
 
     def language_changed(self, combobox):
