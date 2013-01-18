@@ -77,7 +77,7 @@ class Settings(object):
         try:
             f = file(self.filename, "r")
         except IOError: # No settings
-            self.settings = {"makefile": 0}
+            self.settings = {"makefile": IndentationMode(tabs=True)}
             return
         for line in f:
             try:
@@ -110,7 +110,8 @@ class Settings(object):
 
     def default_mode(self):
         if self.gedit_settings.get_boolean("insert-spaces"):
-            return IndentationMode(spaces=self.gedit_settings.get_uint("tabs-size"))
+            default_num_spaces = self.gedit_settings.get_uint("tabs-size")
+            return IndentationMode(spaces=default_num_spaces)
         else:
             return IndentationMode(tabs=True)
                 
