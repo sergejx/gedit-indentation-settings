@@ -72,7 +72,7 @@ def read():
 
 def write():
     f = file(filename, "w")
-    for lang, indent in settings.items():
+    for lang, indent in sorted(settings.items()):
         indent_s = str(indent) if indent > 0 else "tabs"
         f.write(lang + ":" + indent_s + "\n")
 
