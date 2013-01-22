@@ -57,8 +57,6 @@ class IndentationSettingsView(GObject.Object, Gedit.ViewActivatable):
 
     def apply_settings(self, *args):
         global settings
-        if self.modeline_used(): # Modeline settings have higher precedence
-            return
         lang = self.document.get_language()
         if not lang: # No language set
             return
@@ -69,15 +67,6 @@ class IndentationSettingsView(GObject.Object, Gedit.ViewActivatable):
         else:
             self.view.set_insert_spaces_instead_of_tabs(True)
             self.view.set_tab_width(indent)
-
-    def modeline_used(self):
-        """Was indentation set by modeline?"""
-        # Inspired by Auto Tab plugin
-        modeline = self.view.get_data("ModelineOptions")
-        if modeline:
-            if modeline.has_key("tabs-width") or modeline.has_key("use-tabs"):
-                return True
-        return False
 
     def do_activate(self):
         self.document = self.view.get_buffer()
