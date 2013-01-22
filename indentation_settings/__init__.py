@@ -181,7 +181,13 @@ class IndentationSettingsDialog(object):
         self.save_language_settings()
 
     def add_setting(self, button):
-        pass
+        itr = self.settings_store.append(["", "", ""])
+        selection = self.settings_list.get_selection()
+        selection.select_iter(itr)
 
     def remove_setting(self, button):
-        pass
+        selection = self.settings_list.get_selection()
+        model, itr = selection.get_selected()
+        lang_id = model.get_value(itr, 0)
+        model.remove(itr)
+        settings.remove(lang_id)

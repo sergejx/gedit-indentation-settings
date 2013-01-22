@@ -107,6 +107,11 @@ def set(lang, indent):
     settings[lang] = indent
     write()
 
+def remove(lang):
+    """Remove language from settings list"""
+    del settings[lang]
+    write()
+
 def list_settings():
     """
     Return list of all settings as a tuples (language_code, mode)
