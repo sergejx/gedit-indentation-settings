@@ -117,4 +117,4 @@ def list_settings():
     Return list of all settings as a tuples (language_code, mode)
     where mode is instance of IndentationMode.
     """
-    return settings.items()
+    return sorted(settings.items())
