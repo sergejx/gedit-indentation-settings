@@ -86,7 +86,7 @@ class IndentationSettingsDialog(object):
         # Stave of the dialog: in active state all changes are immediately saved
         # Should be set to False in code modifying controls
         self.active = False
-        
+
         # Read UI definition
         builder = Gtk.Builder()
         builder.add_from_file(os.path.join(datadir, "settings.ui"))
@@ -102,7 +102,7 @@ class IndentationSettingsDialog(object):
         self.num_spaces_spin = builder.get_object("num_spaces_spin")
         self.languages_store = builder.get_object("languages_store")
         self.settings_store = builder.get_object("settings_store")
-        
+
         builder.get_object("toolbar").get_style_context() \
                 .add_class("inline-toolbar")
 
@@ -133,13 +133,27 @@ class IndentationSettingsDialog(object):
         """Save selected indentation settings."""
         if not self.active:
             return
-        lang_id = self.language_combo.get_active_id()
-        if self.tabs_radio.get_active(): # Tabs
-            settings.set(lang_id, settings.TABS)
+        # Gather data
+        # language from settings list
+        s_model, s_itr = self.settings_list.get_selection().get_selected()
+        selected_lang_id = s_model.get_value(s_itr, 0)
+        # language from languges combobox
+        l_itr = self.language_combo.get_active_iter()
+        lang_id, lang_name = self.languages_store[l_itr]
+        # indentation
+        if self.tabs_radio.get_active():
+            indent = settings.TABS
         else: # Spaces
-            num = self.num_spaces_spin.get_value_as_int()
-            settings.set(lang_id, num)
-    
+            indent = self.num_spaces_spin.get_value_as_int()
+
+        # Update settings
+        settings.set(lang_id, indent)
+        if lang_id != selected_lang_id and selected_lang_id: # Language changed
+            settings.remove(selected_lang_id)
+
+        # Update settings list
+        s_model[s_itr] = (lang_id, settings.indent_to_string(indent), lang_name)
+
     def settings_selection_changed(self, tree_selection):
         # Find out selected language
         model, itr = tree_selection.get_selected()
@@ -156,7 +170,7 @@ class IndentationSettingsDialog(object):
         self.active = True
 
     def language_changed(self, combobox):
-        pass
+        self.save_language_settings()
 
     def tabs_toggled(self, button):
         self.num_spaces_spin.set_sensitive(self.spaces_radio.get_active())
