@@ -103,6 +103,7 @@ class IndentationSettingsDialog(object):
         self.languages_store = builder.get_object("languages_store")
         self.languages_filter = builder.get_object("languages_filter")
         self.settings_store = builder.get_object("settings_store")
+        self.settings_selection = self.settings_list.get_selection()
 
         builder.get_object("toolbar").get_style_context() \
                 .add_class("inline-toolbar")
@@ -133,8 +134,7 @@ class IndentationSettingsDialog(object):
 
     def language_list_filter_func(self, store, itr, data):
         """Filter function for hiding languages that are already configured."""
-        settings_sel = self.settings_list.get_selection()
-        settings_model, settings_itr = settings_sel.get_selected()
+        settings_model, settings_itr = self.settings_selection.get_selected()
         selected_id = settings_model.get_value(settings_itr, 0)
         lang_id = store[itr][0]
         return not settings.is_configured(lang_id) or lang_id == selected_id
@@ -145,7 +145,7 @@ class IndentationSettingsDialog(object):
             return
         # Gather data
         # language from settings list
-        s_model, s_itr = self.settings_list.get_selection().get_selected()
+        s_model, s_itr = self.settings_selection.get_selected()
         selected_lang_id = s_model.get_value(s_itr, 0)
         # language from languges combobox
         l_itr = self.language_combo.get_active_iter()
@@ -196,12 +196,10 @@ class IndentationSettingsDialog(object):
 
     def add_setting(self, button):
         itr = self.settings_store.append(["", "", ""])
-        selection = self.settings_list.get_selection()
-        selection.select_iter(itr)
+        self.settings_selection.select_iter(itr)
 
     def remove_setting(self, button):
-        selection = self.settings_list.get_selection()
-        model, itr = selection.get_selected()
+        model, itr = self.settings_selection.get_selected()
         lang_id = model.get_value(itr, 0)
         model.remove(itr)
         settings.remove(lang_id)
