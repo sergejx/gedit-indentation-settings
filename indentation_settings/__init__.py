@@ -101,6 +101,7 @@ class IndentationSettingsDialog(object):
         self.spaces_radio = builder.get_object("spaces_radio")
         self.num_spaces_spin = builder.get_object("num_spaces_spin")
         self.languages_store = builder.get_object("languages_store")
+        self.languages_filter = builder.get_object("languages_filter")
         self.settings_store = builder.get_object("settings_store")
 
         builder.get_object("toolbar").get_style_context() \
@@ -121,6 +122,7 @@ class IndentationSettingsDialog(object):
         for id in lang_ids:
             name = manager.get_language(id).get_name()
             self.languages_store.append([id, name])
+        self.languages_filter.set_visible_func(self.language_list_filter_func)
 
     def init_settings_list(self):
         manager = GtkSource.LanguageManager.get_default()
@@ -128,6 +130,14 @@ class IndentationSettingsDialog(object):
             name = manager.get_language(lang_id).get_name()
             self.settings_store.append(
                 [lang_id, settings.indent_to_string(level), name])
+
+    def language_list_filter_func(self, store, itr, data):
+        """Filter function for hiding languages that are already configured."""
+        settings_sel = self.settings_list.get_selection()
+        settings_model, settings_itr = settings_sel.get_selected()
+        selected_id = settings_model.get_value(settings_itr, 0)
+        lang_id = store[itr][0]
+        return not settings.is_configured(lang_id) or lang_id == selected_id
 
     def save_language_settings(self):
         """Save selected indentation settings."""
@@ -139,7 +149,7 @@ class IndentationSettingsDialog(object):
         selected_lang_id = s_model.get_value(s_itr, 0)
         # language from languges combobox
         l_itr = self.language_combo.get_active_iter()
-        lang_id, lang_name = self.languages_store[l_itr]
+        lang_id, lang_name = self.languages_filter[l_itr]
         # indentation
         if self.tabs_radio.get_active():
             indent = settings.TABS
@@ -160,6 +170,7 @@ class IndentationSettingsDialog(object):
         lang_id = model.get_value(itr, 0)
         # Set all controls properly
         self.active = False # Stop saving settings
+        self.languages_filter.refilter()
         self.language_combo.set_active_id(lang_id)
         indent = settings.get(lang_id)
         if indent == settings.TABS:

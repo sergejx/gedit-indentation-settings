@@ -14,6 +14,9 @@
       <column type="gchararray"/>
     </columns>
   </object>
+  <object class="GtkTreeModelFilter" id="languages_filter">
+    <property name="child_model">languages_store</property>
+  </object>
   <object class="GtkListStore" id="settings_store">
     <columns>
       <!-- column-name id -->
@@ -159,7 +162,7 @@
               <object class="GtkComboBox" id="language_combo">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
-                <property name="model">languages_store</property>
+                <property name="model">languages_filter</property>
                 <property name="entry_text_column">1</property>
                 <property name="id_column">0</property>
                 <signal name="changed" handler="language_changed" swapped="no"/>
