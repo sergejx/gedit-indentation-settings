@@ -57,7 +57,6 @@ class IndentationSettingsView(GObject.Object, Gedit.ViewActivatable):
         GObject.Object.__init__(self)
 
     def apply_settings(self, *args):
-        global settings
         lang = self.document.get_language()
         if not lang: # No language set
             return
