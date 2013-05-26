@@ -58,6 +58,7 @@ class IndentationSettingsDialog(object):
         builder.connect_signals(self)
         self.active = True
         self.disable_settings_pane()
+        self.remove_button.set_sensitive(False)
 
     def get_panel(self):
         return self.panel
@@ -145,8 +146,10 @@ class IndentationSettingsDialog(object):
         if itr is not None:
             lang_id = model.get_value(itr, 0)
             self.fill_language_settings(lang_id)
+            self.remove_button.set_sensitive(True)
         else: # Nothing selected
             self.disable_settings_pane()
+            self.remove_button.set_sensitive(False)
         
     def language_changed(self, combobox):
         self.save_language_settings()
