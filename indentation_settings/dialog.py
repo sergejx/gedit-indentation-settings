@@ -57,6 +57,7 @@ class IndentationSettingsDialog(object):
 
         builder.connect_signals(self)
         self.active = True
+        self.disable_settings_pane()
 
     def get_panel(self):
         return self.panel
@@ -82,6 +83,37 @@ class IndentationSettingsDialog(object):
         selected_id = settings_model.get_value(settings_itr, 0)
         lang_id = store[itr][0]
         return not settings.is_configured(lang_id) or lang_id == selected_id
+
+    def disable_settings_pane(self):
+        """
+        Disable indentation settings for cases where no language is selected.
+        """
+        for control in [self.language_combo, self.tabs_radio, self.spaces_radio,
+                        self.num_spaces_spin]:
+            control.set_sensitive(False)
+        # Unselect language
+        self.active = False
+        self.language_combo.set_active_id(None)
+        self.active = True
+
+    def fill_language_settings(self, lang_id):
+        """Setup indentation settings pane controls for a language."""
+        # Enable controls
+        self.language_combo.set_sensitive(True)
+        self.tabs_radio.set_sensitive(True)
+        self.spaces_radio.set_sensitive(True)
+        # Set all controls properly
+        self.active = False # Stop saving settings
+        self.languages_filter.refilter()
+        self.language_combo.set_active_id(lang_id)
+        indent = settings.get(lang_id)
+        if indent == settings.TABS:
+            self.tabs_radio.set_active(True)
+        else:
+            self.spaces_radio.set_active(True)
+            self.num_spaces_spin.set_value(indent)
+            self.num_spaces_spin.set_sensitive(True)
+        self.active = True
 
     def save_language_settings(self):
         """Save selected indentation settings."""
@@ -110,30 +142,12 @@ class IndentationSettingsDialog(object):
 
     def settings_selection_changed(self, tree_selection):
         model, itr = tree_selection.get_selected()
-        # If nothing is selected, disable controls
-        if itr is None:
-            self.tabs_radio.set_sensitive(False)
-            self.spaces_radio.set_sensitive(False)
-            self.num_spaces_spin.set_sensitive(False)
-            return # Nothing more to do there
-        else:
-            self.tabs_radio.set_sensitive(True)
-            self.spaces_radio.set_sensitive(True)
-        # Find out selected language
-        lang_id = model.get_value(itr, 0)
-        # Set all controls properly
-        self.active = False # Stop saving settings
-        self.languages_filter.refilter()
-        self.language_combo.set_active_id(lang_id)
-        indent = settings.get(lang_id)
-        if indent == settings.TABS:
-            self.self.num_spaces_spin.set_sensitive(False).set_active(True)
-        else:
-            self.spaces_radio.set_active(True)
-            self.num_spaces_spin.set_value(indent)
-            self.num_spaces_spin.set_sensitive(True)
-        self.active = True
-
+        if itr is not None:
+            lang_id = model.get_value(itr, 0)
+            self.fill_language_settings(lang_id)
+        else: # Nothing selected
+            self.disable_settings_pane()
+        
     def language_changed(self, combobox):
         self.save_language_settings()
 
