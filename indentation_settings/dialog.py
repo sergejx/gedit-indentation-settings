@@ -27,7 +27,7 @@ import settings
 
 class IndentationSettingsDialog(object):
     def __init__(self, datadir):
-        # Stave of the dialog: in active state all changes are immediately saved
+        # State of the dialog: in active state all changes are immediately saved
         # Should be set to False in code modifying controls
         self.active = False
 
