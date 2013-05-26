@@ -21,6 +21,7 @@
 #  Boston, MA 02111-1307, USA.
 
 import os
+from contextlib import contextmanager
 from gi.repository import Gtk, GtkSource
 
 import settings
@@ -29,6 +30,7 @@ class IndentationSettingsDialog(object):
     def __init__(self, datadir):
         # State of the dialog: in active state all changes are immediately saved
         # Should be set to False in code modifying controls
+        # Managed using self.inactive context manager
         self.active = False
 
         # Read UI definition
@@ -54,14 +56,22 @@ class IndentationSettingsDialog(object):
 
         self.init_settings_list()
         self.init_languages_list()
-
-        builder.connect_signals(self)
-        self.active = True
         self.disable_settings_pane()
         self.remove_button.set_sensitive(False)
 
+        builder.connect_signals(self)
+        self.active = True
+
     def get_panel(self):
         return self.panel
+
+    @contextmanager
+    def inactive(self):
+        """Perform actions without settings saving."""
+        state = self.active
+        self.active = False
+        yield
+        self.active = state
 
     def init_languages_list(self):
         manager = GtkSource.LanguageManager.get_default()
@@ -93,9 +103,8 @@ class IndentationSettingsDialog(object):
                         self.num_spaces_spin]:
             control.set_sensitive(False)
         # Unselect language
-        self.active = False
-        self.language_combo.set_active_id(None)
-        self.active = True
+        with self.inactive():
+            self.language_combo.set_active_id(None)
 
     def fill_language_settings(self, lang_id):
         """Setup indentation settings pane controls for a language."""
@@ -104,17 +113,16 @@ class IndentationSettingsDialog(object):
         self.tabs_radio.set_sensitive(True)
         self.spaces_radio.set_sensitive(True)
         # Set all controls properly
-        self.active = False # Stop saving settings
-        self.languages_filter.refilter()
-        self.language_combo.set_active_id(lang_id)
-        indent = settings.get(lang_id)
-        if indent == settings.TABS:
-            self.tabs_radio.set_active(True)
-        else:
-            self.spaces_radio.set_active(True)
-            self.num_spaces_spin.set_value(indent)
-            self.num_spaces_spin.set_sensitive(True)
-        self.active = True
+        with self.inactive():
+            self.languages_filter.refilter()
+            self.language_combo.set_active_id(lang_id)
+            indent = settings.get(lang_id)
+            if indent == settings.TABS:
+                self.tabs_radio.set_active(True)
+            else:
+                self.spaces_radio.set_active(True)
+                self.num_spaces_spin.set_value(indent)
+                self.num_spaces_spin.set_sensitive(True)
 
     def save_language_settings(self):
         """Save selected indentation settings."""
