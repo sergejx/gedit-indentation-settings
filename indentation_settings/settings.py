@@ -42,7 +42,7 @@ def indent_to_string(indent):
     if indent == TABS:
         return "tabs"
     else:
-        return str(indent)
+        return str(indent) + " spaces"
 
 def indent_from_string(string):
     """
