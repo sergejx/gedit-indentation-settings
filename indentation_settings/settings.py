@@ -25,14 +25,13 @@ Indentation mode is stored as number of spaces or special number TABS.
 """
 
 import os
-import glib
-from gi.repository import Gio
+from gi.repository import Gio, GLib
 
 SETTINGS_KEY = "org.gnome.gedit.preferences.editor"
 TABS = 0
 
 # Initialze module
-filename = os.path.join(glib.get_user_config_dir(),
+filename = os.path.join(GLib.get_user_config_dir(),
                              "gedit", "indentation-settings")
 settings = {}
 gedit_settings = Gio.Settings(SETTINGS_KEY)
@@ -58,7 +57,7 @@ def indent_from_string(string):
 def read():
     """Read configuration file."""
     try:
-        f = file(filename, "r")
+        f = open(filename, "r")
     except IOError: # No settings
         settings['makefile'] = TABS
         return
@@ -71,7 +70,7 @@ def read():
             pass
 
 def write():
-    f = file(filename, "w")
+    f = open(filename, "w")
     for lang, indent in sorted(settings.items()):
         indent_s = str(indent) if indent > 0 else "tabs"
         f.write(lang + ":" + indent_s + "\n")

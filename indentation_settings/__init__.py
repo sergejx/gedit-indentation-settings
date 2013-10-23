@@ -23,8 +23,8 @@
 
 from gi.repository import GObject, Gedit, PeasGtk
 
-import settings
-from dialog import IndentationSettingsDialog
+from . import settings
+from .dialog import IndentationSettingsDialog
 
 class IndentationSettingsApp(GObject.Object, Gedit.AppActivatable,
                              PeasGtk.Configurable):

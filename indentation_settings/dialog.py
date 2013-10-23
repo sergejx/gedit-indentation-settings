@@ -24,7 +24,7 @@ import os
 from contextlib import contextmanager
 from gi.repository import Gtk, GtkSource
 
-import settings
+from . import settings
 
 class IndentationSettingsDialog(object):
     def __init__(self, datadir):
